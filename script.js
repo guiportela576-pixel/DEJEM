@@ -7,7 +7,11 @@ const defaultState = {
   delegadaValue: 0,
   currentTab: 'registro',
   currentMonth: '',
-  history: {}
+  history: {},
+  calendar: {
+    dejem: [],
+    delegada: []
+  }
 };
 
 function getMonthKey(date = new Date()) {
@@ -41,7 +45,15 @@ function buildMonthSnapshot(sourceState) {
 function loadState() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    return { ...defaultState, ...saved, history: saved?.history || {} };
+    return {
+      ...defaultState,
+      ...saved,
+      history: saved?.history || {},
+      calendar: {
+        dejem: saved?.calendar?.dejem || [],
+        delegada: saved?.calendar?.delegada || []
+      }
+    };
   } catch {
     return { ...defaultState };
   }
@@ -70,6 +82,10 @@ function ensureCurrentMonth() {
     state.currentMonth = nowMonth;
     state.dejemCount = 0;
     state.delegadaCount = 0;
+    state.calendar = {
+      dejem: [],
+      delegada: []
+    };
     state.currentTab = 'registro';
   }
 }
@@ -102,6 +118,67 @@ function renderHistory() {
   }).join('');
 }
 
+function getCalendarConfig(type) {
+  return {
+    key: type,
+    elementId: type === 'dejem' ? 'calendarDejem' : 'calendarDelegada',
+    labelId: type === 'dejem' ? 'calendarMonthDejem' : 'calendarMonthDelegada'
+  };
+}
+
+function renderCalendar(type) {
+  const { key, elementId, labelId } = getCalendarConfig(type);
+  const calendarElement = document.getElementById(elementId);
+  const labelElement = document.getElementById(labelId);
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDay = new Date(year, month, 1).getDay();
+  const startColumn = (firstDay + 6) % 7;
+  const selectedDays = new Set(state.calendar[key] || []);
+  const weekLabels = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
+
+  labelElement.textContent = getMonthLabel(state.currentMonth);
+
+  let html = weekLabels.map(day => `<div class="weekday">${day}</div>`).join('');
+
+  for (let i = 0; i < startColumn; i += 1) {
+    html += '<div class="day empty"></div>';
+  }
+
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const activeClass = selectedDays.has(day) ? ' selected' : '';
+    html += `<button class="day${activeClass}" data-type="${key}" data-day="${day}">${day}</button>`;
+  }
+
+  const totalCells = startColumn + daysInMonth;
+  const remainder = totalCells % 7;
+  if (remainder !== 0) {
+    for (let i = 0; i < 7 - remainder; i += 1) {
+      html += '<div class="day empty"></div>';
+    }
+  }
+
+  calendarElement.innerHTML = html;
+}
+
+function renderCalendars() {
+  renderCalendar('dejem');
+  renderCalendar('delegada');
+}
+
+function toggleCalendarDay(type, day) {
+  const current = new Set(state.calendar[type] || []);
+  if (current.has(day)) {
+    current.delete(day);
+  } else {
+    current.add(day);
+  }
+  state.calendar[type] = Array.from(current).sort((a, b) => a - b);
+  render();
+}
+
 function render() {
   ensureCurrentMonth();
 
@@ -116,6 +193,7 @@ function render() {
   document.getElementById('inputDejem').value = state.dejemValue || '';
   document.getElementById('inputDelegada').value = state.delegadaValue || '';
   renderHistory();
+  renderCalendars();
   switchTab(state.currentTab);
   saveState();
 }
@@ -129,7 +207,8 @@ function switchTab(tabName) {
   const titleMap = {
     registro: 'Registro',
     editar: 'Editar',
-    historico: 'Histórico'
+    historico: 'Histórico',
+    calendario: 'Calendário'
   };
   document.getElementById('screenTitle').textContent = titleMap[tabName] || 'Registro';
   saveState();
@@ -170,13 +249,23 @@ document.getElementById('resetarTudo').addEventListener('click', () => {
     ...defaultState,
     currentTab: 'registro',
     currentMonth: getMonthKey(),
-    history: {}
+    history: {},
+    calendar: {
+      dejem: [],
+      delegada: []
+    }
   };
   render();
 });
 
 document.querySelectorAll('.nav-btn').forEach(btn => {
   btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+});
+
+document.addEventListener('click', event => {
+  const dayButton = event.target.closest('.day[data-type][data-day]');
+  if (!dayButton) return;
+  toggleCalendarDay(dayButton.dataset.type, Number(dayButton.dataset.day));
 });
 
 if ('serviceWorker' in navigator) {
