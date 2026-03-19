@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Registro DEJEM</title>
+  <meta name="theme-color" content="#08111f" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" sizes="180x180" href="icon-180.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="phone-shell">
+    <div class="app">
+      <header class="topbar">
+        <div class="status-space"></div>
+        <h1 id="screenTitle">Registro</h1>
+      </header>
+
+      <main class="content">
+        <section id="tab-registro" class="tab active">
+          <div class="button-row">
+            <button id="btnDejem" class="action-btn neon-green">DEJEM</button>
+            <button id="btnDelegada" class="action-btn neon-blue">DELEGADA</button>
+          </div>
+
+          <div class="card">
+            <h2>DEJEM</h2>
+            <p>Quantidade: <strong id="dejemQtd">0</strong></p>
+            <p>Valor unitário: <strong id="dejemValor">R$ 0,00</strong></p>
+            <p>Total DEJEM: <strong id="dejemTotal">R$ 0,00</strong></p>
+            <button class="mini-btn" id="menosDejem">Remover 1</button>
+          </div>
+
+          <div class="card">
+            <h2>DELEGADA</h2>
+            <p>Quantidade: <strong id="delegadaQtd">0</strong></p>
+            <p>Valor unitário: <strong id="delegadaValor">R$ 0,00</strong></p>
+            <p>Total DELEGADA: <strong id="delegadaTotal">R$ 0,00</strong></p>
+            <button class="mini-btn" id="menosDelegada">Remover 1</button>
+          </div>
+
+          <div class="card total-card">
+            <h2>Total Geral</h2>
+            <p>Quantidade total: <strong id="qtdTotal">0</strong></p>
+            <p>Valor total: <strong id="valorTotal">R$ 0,00</strong></p>
+            <button class="reset-btn" id="resetarTudo">Zerar tudo</button>
+          </div>
+        </section>
+
+        <section id="tab-editar" class="tab">
+          <div class="card">
+            <h2>Editar valores</h2>
+            <label for="inputDejem">Valor da DEJEM</label>
+            <input id="inputDejem" type="number" min="0" step="0.01" placeholder="Ex.: 250.00" />
+
+            <label for="inputDelegada">Valor da DELEGADA</label>
+            <input id="inputDelegada" type="number" min="0" step="0.01" placeholder="Ex.: 300.00" />
+
+            <button class="save-btn" id="salvarValores">Salvar valores</button>
+          </div>
+
+          <div class="card info-card">
+            <h2>Como funciona</h2>
+            <p>Na aba <strong>Registro</strong>, cada toque em DEJEM ou DELEGADA soma 1 na quantidade e calcula o total automaticamente.</p>
+            <p>Os dados ficam salvos no navegador do aparelho.</p>
+          </div>
+        </section>
+      </main>
+
+      <nav class="bottom-nav">
+        <button class="nav-btn active" data-tab="registro">Registro</button>
+        <button class="nav-btn" data-tab="editar">Editar</button>
+      </nav>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
