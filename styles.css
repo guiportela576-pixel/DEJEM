@@ -14,8 +14,8 @@
 * { box-sizing: border-box; }
 html, body {
   margin: 0;
-  height: 100%;
-  overflow: hidden;
+  min-height: 100%;
+  overflow-y: auto;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background:
     radial-gradient(circle at top, #143159 0%, #060c18 40%, #000 100%);
@@ -24,13 +24,13 @@ html, body {
 body {
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   padding: 18px;
 }
 .phone-shell {
   width: 100%;
   max-width: 430px;
-  height: min(820px, 100dvh - 36px);
+  min-height: min(820px, 100dvh - 36px);
   background: linear-gradient(180deg, #09111f, #01050c);
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 38px;
@@ -68,15 +68,14 @@ body {
 .content {
   flex: 1;
   padding: 12px;
-  overflow: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .tab {
   display: none;
-  height: 100%;
 }
 .tab.active {
-  display: flex;
-  flex-direction: column;
+  display: block;
 }
 .button-row {
   display: grid;
@@ -119,10 +118,6 @@ body {
   padding: 14px 16px;
   margin-bottom: 10px;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04), 0 10px 20px rgba(0,0,0,0.24);
-}
-#tab-registro .card {
-  flex: 1;
-  min-height: 0;
 }
 .card h2 {
   margin-top: 0;
@@ -175,16 +170,7 @@ input:focus {
 .total-card {
   border-color: rgba(61,255,90,0.3);
 }
-.history-card {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
 .history-list {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
   padding-right: 4px;
 }
 .history-item {
@@ -207,7 +193,7 @@ input:focus {
 }
 #tab-calendario {
   gap: 10px;
-  overflow: hidden;
+  overflow: visible;
 }
 .calendar-card {
   flex: 1;
@@ -327,7 +313,7 @@ textarea:focus {
 }
 #tab-horas {
   gap: 10px;
-  overflow: hidden;
+  overflow: visible;
 }
 .hours-card,
 .hours-list-card {
@@ -363,7 +349,7 @@ textarea:focus {
 .hours-list {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  overflow: visible;
   padding-right: 4px;
 }
 .hours-item {
@@ -385,10 +371,37 @@ textarea:focus {
   word-break: break-word;
 }
 .bottom-nav {
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
 }
 @media (max-width: 480px) {
   textarea { min-height: 88px; }
-  .bottom-nav { grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .bottom-nav { grid-template-columns: repeat(4, 1fr); gap: 6px; }
   .nav-btn { min-height: 46px; font-size: 0.72rem; }
+}
+
+.bottom-nav {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+}
+.hours-type-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+.hours-balance-card {
+  margin-top: 12px;
+  border: 1px solid rgba(57,168,255,0.25);
+  border-radius: 16px;
+  padding: 12px;
+  background: rgba(255,255,255,0.04);
+}
+.hours-balance-card p {
+  margin: 0;
+}
+@media (max-width: 430px) {
+  .phone-shell {
+    border-radius: 28px;
+    padding: 10px;
+  }
 }

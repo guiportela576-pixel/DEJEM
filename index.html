@@ -47,9 +47,7 @@
             <p>Valor total: <strong id="valorTotal">R$ 0,00</strong></p>
             <button class="reset-btn" id="resetarTudo">Zerar tudo</button>
           </div>
-        </section>
 
-        <section id="tab-editar" class="tab">
           <div class="card">
             <h2>Editar valores</h2>
             <label for="inputDejem">Valor da DEJEM</label>
@@ -59,12 +57,6 @@
             <input id="inputDelegada" type="number" min="0" step="0.01" placeholder="Ex.: 300.00" />
 
             <button class="save-btn" id="salvarValores">Salvar valores</button>
-          </div>
-
-          <div class="card info-card">
-            <h2>Como funciona</h2>
-            <p>Na aba <strong>Registro</strong>, cada toque em DEJEM ou DELEGADA soma 1 na quantidade e calcula o total automaticamente.</p>
-            <p>Os dados ficam salvos no navegador do aparelho.</p>
           </div>
         </section>
 
@@ -83,6 +75,11 @@
             <div class="hours-type-row">
               <button id="tipoFolga" class="hours-type-btn active">FOLGA</button>
               <button id="tipoHoras" class="hours-type-btn">HORAS</button>
+              <button id="tipoSubtrairHoras" class="hours-type-btn">SUBTRAIR HORAS</button>
+            </div>
+
+            <div class="hours-balance-card">
+              <p>Saldo de horas: <strong id="saldoHoras">0h</strong></p>
             </div>
 
             <label for="horasValorInput" id="horasValorLabel">Folga</label>
@@ -121,8 +118,7 @@
 
       <nav class="bottom-nav">
         <button class="nav-btn active" data-tab="registro">Registro</button>
-        <button class="nav-btn" data-tab="editar">Editar</button>
-        <button class="nav-btn" data-tab="historico">Histórico</button>
+                <button class="nav-btn" data-tab="historico">Histórico</button>
         <button class="nav-btn" data-tab="calendario">Calendário</button>
         <button class="nav-btn" data-tab="horas">Horas</button>
       </nav>

@@ -55,7 +55,8 @@ function loadState() {
         dejem: saved?.calendar?.dejem || [],
         delegada: saved?.calendar?.delegada || []
       },
-      hoursRecords: saved?.hoursRecords || []
+      hoursRecords: saved?.hoursRecords || [],
+      currentTab: saved?.currentTab === 'editar' ? 'registro' : (saved?.currentTab || 'registro')
     };
   } catch {
     return { ...defaultState };
@@ -70,6 +71,23 @@ function saveState() {
 
 function money(value) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function parseHoursValue(value) {
+  const normalized = String(value).replace(',', '.').match(/-?\d+(?:\.\d+)?/);
+  return normalized ? Number(normalized[0]) : 0;
+}
+
+function formatHours(value) {
+  return `${value.toLocaleString('pt-BR')}h`;
+}
+
+function getHoursBalance() {
+  return state.hoursRecords.reduce((acc, record) => {
+    if (record.type === 'horas') return acc + parseHoursValue(record.value);
+    if (record.type === 'subtrair_horas') return acc - parseHoursValue(record.value);
+    return acc;
+  }, 0);
 }
 
 function ensureCurrentMonth() {
@@ -184,13 +202,22 @@ function toggleCalendarDay(type, day) {
 
 function updateHoursFormUI() {
   const isFolga = state.hoursFormType === 'folga';
+  const isHoras = state.hoursFormType === 'horas';
+  const isSubtrair = state.hoursFormType === 'subtrair_horas';
   document.getElementById('tipoFolga').classList.toggle('active', isFolga);
-  document.getElementById('tipoHoras').classList.toggle('active', !isFolga);
+  document.getElementById('tipoHoras').classList.toggle('active', isHoras);
+  document.getElementById('tipoSubtrairHoras').classList.toggle('active', isSubtrair);
   document.getElementById('horasValorLabel').textContent = isFolga ? 'Folga' : 'Horas';
-  document.getElementById('horasValorInput').placeholder = isFolga ? 'Ex.: 1 folga' : 'Ex.: 2 horas';
+  document.getElementById('horasValorInput').placeholder = isFolga
+    ? 'Ex.: 1 folga'
+    : isHoras
+      ? 'Ex.: 2 horas'
+      : 'Ex.: 2 horas usadas';
   document.getElementById('horasObservacaoInput').placeholder = isFolga
     ? 'Ex.: por ter dobrado de escala no dia 10'
-    : 'Ex.: por ter trabalhado 2 horas a mais no dia 15 em ocorrência';
+    : isHoras
+      ? 'Ex.: por ter trabalhado 2 horas a mais no dia 15 em ocorrência'
+      : 'Ex.: saí 2 horas mais cedo para resolver algo';
 }
 
 function escapeHtml(text) {
@@ -204,13 +231,20 @@ function escapeHtml(text) {
 
 function renderHoursList() {
   const list = document.getElementById('horasLista');
+  const saldoHoras = document.getElementById('saldoHoras');
+  saldoHoras.textContent = formatHours(getHoursBalance());
+
   if (!state.hoursRecords.length) {
     list.innerHTML = '<p class="hours-empty">Nenhum registro salvo.</p>';
     return;
   }
 
   list.innerHTML = state.hoursRecords.slice().reverse().map(record => {
-    const typeLabel = record.type === 'folga' ? 'Folga' : 'Horas';
+    const typeLabel = record.type === 'folga'
+      ? 'Folga'
+      : record.type === 'subtrair_horas'
+        ? 'Subtrair horas'
+        : 'Horas';
     return `
       <div class="hours-item">
         <h3>${typeLabel}: <strong>${escapeHtml(record.value)}</strong></h3>
@@ -228,6 +262,11 @@ function saveHoursRecord() {
 
   if (!value) {
     alert(state.hoursFormType === 'folga' ? 'Digite a folga.' : 'Digite as horas.');
+    return;
+  }
+
+  if ((state.hoursFormType === 'horas' || state.hoursFormType === 'subtrair_horas') && parseHoursValue(value) <= 0) {
+    alert('Digite uma quantidade de horas válida.');
     return;
   }
 
@@ -270,19 +309,19 @@ function render() {
 }
 
 function switchTab(tabName) {
-  state.currentTab = tabName;
+  const targetTab = document.getElementById(`tab-${tabName}`) ? tabName : 'registro';
+  state.currentTab = targetTab;
   document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-  document.getElementById(`tab-${tabName}`).classList.add('active');
-  document.querySelector(`.nav-btn[data-tab="${tabName}"]`).classList.add('active');
+  document.getElementById(`tab-${targetTab}`).classList.add('active');
+  document.querySelector(`.nav-btn[data-tab="${targetTab}"]`).classList.add('active');
   const titleMap = {
     registro: 'Registro',
-    editar: 'Editar',
     historico: 'Histórico',
     calendario: 'Calendário',
     horas: 'Horas'
   };
-  document.getElementById('screenTitle').textContent = titleMap[tabName] || 'Registro';
+  document.getElementById('screenTitle').textContent = titleMap[targetTab] || 'Registro';
   saveState();
 }
 
@@ -339,6 +378,12 @@ document.getElementById('tipoFolga').addEventListener('click', () => {
 
 document.getElementById('tipoHoras').addEventListener('click', () => {
   state.hoursFormType = 'horas';
+  updateHoursFormUI();
+  saveState();
+});
+
+document.getElementById('tipoSubtrairHoras').addEventListener('click', () => {
+  state.hoursFormType = 'subtrair_horas';
   updateHoursFormUI();
   saveState();
 });
