@@ -11,7 +11,9 @@ const defaultState = {
   calendar: {
     dejem: [],
     delegada: []
-  }
+  },
+  hoursFormType: 'folga',
+  hoursRecords: []
 };
 
 function getMonthKey(date = new Date()) {
@@ -52,7 +54,8 @@ function loadState() {
       calendar: {
         dejem: saved?.calendar?.dejem || [],
         delegada: saved?.calendar?.delegada || []
-      }
+      },
+      hoursRecords: saved?.hoursRecords || []
     };
   } catch {
     return { ...defaultState };
@@ -179,6 +182,72 @@ function toggleCalendarDay(type, day) {
   render();
 }
 
+function updateHoursFormUI() {
+  const isFolga = state.hoursFormType === 'folga';
+  document.getElementById('tipoFolga').classList.toggle('active', isFolga);
+  document.getElementById('tipoHoras').classList.toggle('active', !isFolga);
+  document.getElementById('horasValorLabel').textContent = isFolga ? 'Folga' : 'Horas';
+  document.getElementById('horasValorInput').placeholder = isFolga ? 'Ex.: 1 folga' : 'Ex.: 2 horas';
+  document.getElementById('horasObservacaoInput').placeholder = isFolga
+    ? 'Ex.: por ter dobrado de escala no dia 10'
+    : 'Ex.: por ter trabalhado 2 horas a mais no dia 15 em ocorrência';
+}
+
+function escapeHtml(text) {
+  return String(text)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function renderHoursList() {
+  const list = document.getElementById('horasLista');
+  if (!state.hoursRecords.length) {
+    list.innerHTML = '<p class="hours-empty">Nenhum registro salvo.</p>';
+    return;
+  }
+
+  list.innerHTML = state.hoursRecords.slice().reverse().map(record => {
+    const typeLabel = record.type === 'folga' ? 'Folga' : 'Horas';
+    return `
+      <div class="hours-item">
+        <h3>${typeLabel}: <strong>${escapeHtml(record.value)}</strong></h3>
+        <p><strong>Observação:</strong> ${escapeHtml(record.note)}</p>
+      </div>
+    `;
+  }).join('');
+}
+
+function saveHoursRecord() {
+  const valueInput = document.getElementById('horasValorInput');
+  const noteInput = document.getElementById('horasObservacaoInput');
+  const value = valueInput.value.trim();
+  const note = noteInput.value.trim();
+
+  if (!value) {
+    alert(state.hoursFormType === 'folga' ? 'Digite a folga.' : 'Digite as horas.');
+    return;
+  }
+
+  if (!note) {
+    alert('Digite a observação.');
+    return;
+  }
+
+  state.hoursRecords.push({
+    type: state.hoursFormType,
+    value,
+    note
+  });
+
+  valueInput.value = '';
+  noteInput.value = '';
+  render();
+  alert('Registro salvo com sucesso.');
+}
+
 function render() {
   ensureCurrentMonth();
 
@@ -194,6 +263,8 @@ function render() {
   document.getElementById('inputDelegada').value = state.delegadaValue || '';
   renderHistory();
   renderCalendars();
+  updateHoursFormUI();
+  renderHoursList();
   switchTab(state.currentTab);
   saveState();
 }
@@ -208,7 +279,8 @@ function switchTab(tabName) {
     registro: 'Registro',
     editar: 'Editar',
     historico: 'Histórico',
-    calendario: 'Calendário'
+    calendario: 'Calendário',
+    horas: 'Horas'
   };
   document.getElementById('screenTitle').textContent = titleMap[tabName] || 'Registro';
   saveState();
@@ -253,10 +325,25 @@ document.getElementById('resetarTudo').addEventListener('click', () => {
     calendar: {
       dejem: [],
       delegada: []
-    }
+    },
+    hoursRecords: []
   };
   render();
 });
+
+document.getElementById('tipoFolga').addEventListener('click', () => {
+  state.hoursFormType = 'folga';
+  updateHoursFormUI();
+  saveState();
+});
+
+document.getElementById('tipoHoras').addEventListener('click', () => {
+  state.hoursFormType = 'horas';
+  updateHoursFormUI();
+  saveState();
+});
+
+document.getElementById('salvarHoraRegistro').addEventListener('click', saveHoursRecord);
 
 document.querySelectorAll('.nav-btn').forEach(btn => {
   btn.addEventListener('click', () => switchTab(btn.dataset.tab));

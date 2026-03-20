@@ -75,6 +75,31 @@
           </div>
         </section>
 
+
+
+        <section id="tab-horas" class="tab">
+          <div class="card hours-card">
+            <h2>Banco de horas</h2>
+            <div class="hours-type-row">
+              <button id="tipoFolga" class="hours-type-btn active">FOLGA</button>
+              <button id="tipoHoras" class="hours-type-btn">HORAS</button>
+            </div>
+
+            <label for="horasValorInput" id="horasValorLabel">Folga</label>
+            <input id="horasValorInput" type="text" placeholder="Ex.: 1 folga" />
+
+            <label for="horasObservacaoInput">Observação</label>
+            <textarea id="horasObservacaoInput" rows="4" placeholder="Ex.: por ter dobrado de escala no dia 10"></textarea>
+
+            <button class="save-btn" id="salvarHoraRegistro">Salvar</button>
+          </div>
+
+          <div class="card hours-list-card">
+            <h2>Registros salvos</h2>
+            <div id="horasLista" class="hours-list"></div>
+          </div>
+        </section>
+
         <section id="tab-calendario" class="tab">
           <div class="card calendar-card">
             <div class="calendar-header">
@@ -99,6 +124,7 @@
         <button class="nav-btn" data-tab="editar">Editar</button>
         <button class="nav-btn" data-tab="historico">Histórico</button>
         <button class="nav-btn" data-tab="calendario">Calendário</button>
+        <button class="nav-btn" data-tab="horas">Horas</button>
       </nav>
     </div>
   </div>
