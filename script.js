@@ -90,6 +90,14 @@ function getHoursBalance() {
   }, 0);
 }
 
+function getFolgaBalance() {
+  return state.hoursRecords.reduce((acc, record) => {
+    if (record.type === 'folga') return acc + parseHoursValue(record.value || 1);
+    if (record.type === 'subtrair_folga') return acc - parseHoursValue(record.value || 1);
+    return acc;
+  }, 0);
+}
+
 function ensureCurrentMonth() {
   const nowMonth = getMonthKey();
 
@@ -203,21 +211,27 @@ function toggleCalendarDay(type, day) {
 function updateHoursFormUI() {
   const isFolga = state.hoursFormType === 'folga';
   const isHoras = state.hoursFormType === 'horas';
-  const isSubtrair = state.hoursFormType === 'subtrair_horas';
+  const isSubtrairHoras = state.hoursFormType === 'subtrair_horas';
+  const isSubtrairFolga = state.hoursFormType === 'subtrair_folga';
   document.getElementById('tipoFolga').classList.toggle('active', isFolga);
   document.getElementById('tipoHoras').classList.toggle('active', isHoras);
-  document.getElementById('tipoSubtrairHoras').classList.toggle('active', isSubtrair);
-  document.getElementById('horasValorLabel').textContent = isFolga ? 'Folga' : 'Horas';
+  document.getElementById('tipoSubtrairHoras').classList.toggle('active', isSubtrairHoras);
+  document.getElementById('tipoSubtrairFolga').classList.toggle('active', isSubtrairFolga);
+  document.getElementById('horasValorLabel').textContent = (isFolga || isSubtrairFolga) ? 'Folga' : 'Horas';
   document.getElementById('horasValorInput').placeholder = isFolga
     ? 'Ex.: 1 folga'
     : isHoras
       ? 'Ex.: 2 horas'
-      : 'Ex.: 2 horas usadas';
+      : isSubtrairHoras
+        ? 'Ex.: 2 horas usadas'
+        : 'Ex.: 1 folga usada';
   document.getElementById('horasObservacaoInput').placeholder = isFolga
     ? 'Ex.: por ter dobrado de escala no dia 10'
     : isHoras
       ? 'Ex.: por ter trabalhado 2 horas a mais no dia 15 em ocorrência'
-      : 'Ex.: saí 2 horas mais cedo para resolver algo';
+      : isSubtrairHoras
+        ? 'Ex.: saí 2 horas mais cedo para resolver algo'
+        : 'Ex.: usei 1 folga para resolver algo';
 }
 
 function escapeHtml(text) {
@@ -229,29 +243,54 @@ function escapeHtml(text) {
     .replaceAll("'", '&#39;');
 }
 
+function formatRecordDate(timestamp) {
+  if (!timestamp) return '';
+  return new Date(timestamp).toLocaleString('pt-BR');
+}
+
+function renderHoursRecordItem(record) {
+  const typeLabel = record.type === 'folga'
+    ? 'Folga adicionada'
+    : record.type === 'subtrair_folga'
+      ? 'Folga usada'
+      : record.type === 'subtrair_horas'
+        ? 'Horas usadas'
+        : 'Horas adicionadas';
+
+  return `
+    <div class="hours-item ${record.type.includes('subtrair') ? 'hours-item-minus' : 'hours-item-plus'}">
+      <h3>${typeLabel}: <strong>${escapeHtml(record.value)}</strong></h3>
+      <p><strong>Observação:</strong> ${escapeHtml(record.note)}</p>
+      ${record.createdAt ? `<p class="hours-date"><strong>Salvo em:</strong> ${escapeHtml(formatRecordDate(record.createdAt))}</p>` : ''}
+    </div>
+  `;
+}
+
 function renderHoursList() {
   const list = document.getElementById('horasLista');
   const saldoHoras = document.getElementById('saldoHoras');
+  const saldoFolgas = document.getElementById('saldoFolgas');
   saldoHoras.textContent = formatHours(getHoursBalance());
+  saldoFolgas.textContent = String(getFolgaBalance());
 
   if (!state.hoursRecords.length) {
     list.innerHTML = '<p class="hours-empty">Nenhum registro salvo.</p>';
     return;
   }
 
-  list.innerHTML = state.hoursRecords.slice().reverse().map(record => {
-    const typeLabel = record.type === 'folga'
-      ? 'Folga'
-      : record.type === 'subtrair_horas'
-        ? 'Subtrair horas'
-        : 'Horas';
-    return `
-      <div class="hours-item">
-        <h3>${typeLabel}: <strong>${escapeHtml(record.value)}</strong></h3>
-        <p><strong>Observação:</strong> ${escapeHtml(record.note)}</p>
-      </div>
-    `;
-  }).join('');
+  const folgaRecords = state.hoursRecords.filter(record => record.type === 'folga' || record.type === 'subtrair_folga').slice().reverse();
+  const horasRecords = state.hoursRecords.filter(record => record.type === 'horas' || record.type === 'subtrair_horas').slice().reverse();
+
+  list.innerHTML = `
+    <div class="hours-group">
+      <h3 class="hours-group-title">Folgas</h3>
+      ${folgaRecords.length ? folgaRecords.map(renderHoursRecordItem).join('') : '<p class="hours-empty">Nenhum registro de folga.</p>'}
+    </div>
+    <div class="hours-group">
+      <h3 class="hours-group-title">Horas</h3>
+      ${horasRecords.length ? horasRecords.map(renderHoursRecordItem).join('') : '<p class="hours-empty">Nenhum registro de horas.</p>'}
+    </div>
+  `;
 }
 
 function saveHoursRecord() {
@@ -261,12 +300,12 @@ function saveHoursRecord() {
   const note = noteInput.value.trim();
 
   if (!value) {
-    alert(state.hoursFormType === 'folga' ? 'Digite a folga.' : 'Digite as horas.');
+    alert((state.hoursFormType === 'folga' || state.hoursFormType === 'subtrair_folga') ? 'Digite a folga.' : 'Digite as horas.');
     return;
   }
 
-  if ((state.hoursFormType === 'horas' || state.hoursFormType === 'subtrair_horas') && parseHoursValue(value) <= 0) {
-    alert('Digite uma quantidade de horas válida.');
+  if ((state.hoursFormType === 'horas' || state.hoursFormType === 'subtrair_horas' || state.hoursFormType === 'folga' || state.hoursFormType === 'subtrair_folga') && parseHoursValue(value) <= 0) {
+    alert((state.hoursFormType === 'folga' || state.hoursFormType === 'subtrair_folga') ? 'Digite uma quantidade de folgas válida.' : 'Digite uma quantidade de horas válida.');
     return;
   }
 
@@ -278,7 +317,8 @@ function saveHoursRecord() {
   state.hoursRecords.push({
     type: state.hoursFormType,
     value,
-    note
+    note,
+    createdAt: new Date().toISOString()
   });
 
   valueInput.value = '';
@@ -384,6 +424,12 @@ document.getElementById('tipoHoras').addEventListener('click', () => {
 
 document.getElementById('tipoSubtrairHoras').addEventListener('click', () => {
   state.hoursFormType = 'subtrair_horas';
+  updateHoursFormUI();
+  saveState();
+});
+
+document.getElementById('tipoSubtrairFolga').addEventListener('click', () => {
+  state.hoursFormType = 'subtrair_folga';
   updateHoursFormUI();
   saveState();
 });

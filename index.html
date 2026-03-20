@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Registro DEJEM</title>
   <meta name="theme-color" content="#08111f" />
   <link rel="manifest" href="manifest.json" />
@@ -76,10 +76,12 @@
               <button id="tipoFolga" class="hours-type-btn active">FOLGA</button>
               <button id="tipoHoras" class="hours-type-btn">HORAS</button>
               <button id="tipoSubtrairHoras" class="hours-type-btn">SUBTRAIR HORAS</button>
+              <button id="tipoSubtrairFolga" class="hours-type-btn">SUBTRAIR FOLGA</button>
             </div>
 
             <div class="hours-balance-card">
               <p>Saldo de horas: <strong id="saldoHoras">0h</strong></p>
+              <p>Saldo de folgas: <strong id="saldoFolgas">0</strong></p>
             </div>
 
             <label for="horasValorInput" id="horasValorLabel">Folga</label>
