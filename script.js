@@ -13,7 +13,8 @@ const defaultState = {
     delegada: []
   },
   hoursFormType: 'folga',
-  hoursRecords: []
+  hoursRecords: [],
+  editingHoursRecordId: null
 };
 
 function getMonthKey(date = new Date()) {
@@ -55,7 +56,11 @@ function loadState() {
         dejem: saved?.calendar?.dejem || [],
         delegada: saved?.calendar?.delegada || []
       },
-      hoursRecords: saved?.hoursRecords || [],
+      hoursRecords: (saved?.hoursRecords || []).map((record, index) => ({
+        id: record.id || `legacy-${index}-${record.createdAt || Date.now()}`,
+        ...record
+      })),
+      editingHoursRecordId: null,
       currentTab: saved?.currentTab === 'editar' ? 'registro' : (saved?.currentTab || 'registro')
     };
   } catch {
@@ -232,6 +237,7 @@ function updateHoursFormUI() {
       : isSubtrairHoras
         ? 'Ex.: saí 2 horas mais cedo para resolver algo'
         : 'Ex.: usei 1 folga para resolver algo';
+  document.getElementById('salvarHoraRegistro').textContent = state.editingHoursRecordId ? 'Atualizar' : 'Salvar';
 }
 
 function escapeHtml(text) {
@@ -258,12 +264,54 @@ function renderHoursRecordItem(record) {
         : 'Horas adicionadas';
 
   return `
-    <div class="hours-item ${record.type.includes('subtrair') ? 'hours-item-minus' : 'hours-item-plus'}">
-      <h3>${typeLabel}: <strong>${escapeHtml(record.value)}</strong></h3>
+    <div class="hours-item ${record.type.includes('subtrair') ? 'hours-item-minus' : 'hours-item-plus'}" data-record-id="${escapeHtml(record.id || '')}">
+      <div class="hours-item-top">
+        <h3>${typeLabel}: <strong>${escapeHtml(record.value)}</strong></h3>
+        <div class="hours-item-actions">
+          <button class="record-action-btn edit" data-action="edit-record" data-id="${escapeHtml(record.id || '')}">Editar</button>
+          <button class="record-action-btn delete" data-action="delete-record" data-id="${escapeHtml(record.id || '')}">Excluir</button>
+        </div>
+      </div>
       <p><strong>Observação:</strong> ${escapeHtml(record.note)}</p>
       ${record.createdAt ? `<p class="hours-date"><strong>Salvo em:</strong> ${escapeHtml(formatRecordDate(record.createdAt))}</p>` : ''}
+      ${record.updatedAt ? `<p class="hours-date"><strong>Editado em:</strong> ${escapeHtml(formatRecordDate(record.updatedAt))}</p>` : ''}
     </div>
   `;
+}
+
+function fillHoursFormForEdit(record) {
+  state.hoursFormType = record.type;
+  state.editingHoursRecordId = record.id;
+  updateHoursFormUI();
+  document.getElementById('horasValorInput').value = record.value || '';
+  document.getElementById('horasObservacaoInput').value = record.note || '';
+  document.getElementById('salvarHoraRegistro').textContent = 'Atualizar';
+}
+
+function clearHoursForm() {
+  state.editingHoursRecordId = null;
+  document.getElementById('horasValorInput').value = '';
+  document.getElementById('horasObservacaoInput').value = '';
+  document.getElementById('salvarHoraRegistro').textContent = 'Salvar';
+}
+
+function handleEditHoursRecord(recordId) {
+  const record = state.hoursRecords.find(item => item.id === recordId);
+  if (!record) return;
+  fillHoursFormForEdit(record);
+  switchTab('horas');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function handleDeleteHoursRecord(recordId) {
+  const record = state.hoursRecords.find(item => item.id === recordId);
+  if (!record) return;
+  if (!confirm('Deseja excluir este registro?')) return;
+  state.hoursRecords = state.hoursRecords.filter(item => item.id !== recordId);
+  if (state.editingHoursRecordId === recordId) {
+    clearHoursForm();
+  }
+  render();
 }
 
 function renderHoursList() {
@@ -314,15 +362,31 @@ function saveHoursRecord() {
     return;
   }
 
+  if (state.editingHoursRecordId) {
+    state.hoursRecords = state.hoursRecords.map(record => record.id === state.editingHoursRecordId
+      ? {
+          ...record,
+          type: state.hoursFormType,
+          value,
+          note,
+          updatedAt: new Date().toISOString()
+        }
+      : record);
+    clearHoursForm();
+    render();
+    alert('Registro atualizado com sucesso.');
+    return;
+  }
+
   state.hoursRecords.push({
+    id: `record-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     type: state.hoursFormType,
     value,
     note,
     createdAt: new Date().toISOString()
   });
 
-  valueInput.value = '';
-  noteInput.value = '';
+  clearHoursForm();
   render();
   alert('Registro salvo com sucesso.');
 }
@@ -405,7 +469,8 @@ document.getElementById('resetarTudo').addEventListener('click', () => {
       dejem: [],
       delegada: []
     },
-    hoursRecords: []
+    hoursRecords: [],
+    editingHoursRecordId: null
   };
   render();
 });
@@ -441,6 +506,18 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
 });
 
 document.addEventListener('click', event => {
+  const actionButton = event.target.closest('[data-action][data-id]');
+  if (actionButton) {
+    if (actionButton.dataset.action === 'edit-record') {
+      handleEditHoursRecord(actionButton.dataset.id);
+      return;
+    }
+    if (actionButton.dataset.action === 'delete-record') {
+      handleDeleteHoursRecord(actionButton.dataset.id);
+      return;
+    }
+  }
+
   const dayButton = event.target.closest('.day[data-type][data-day]');
   if (!dayButton) return;
   toggleCalendarDay(dayButton.dataset.type, Number(dayButton.dataset.day));
