@@ -253,6 +253,11 @@ input:focus {
   border-color: rgba(130,205,255,0.95);
   box-shadow: 0 0 14px rgba(57,168,255,0.35);
 }
+.day.scheduled {
+  background: linear-gradient(180deg, rgba(58,230,131,0.98), rgba(12,154,82,0.98));
+  border-color: rgba(147,255,197,0.95);
+  box-shadow: 0 0 14px rgba(58,230,131,0.32);
+}
 .day.empty {
   background: transparent;
   border: 0;

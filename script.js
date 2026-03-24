@@ -9,8 +9,8 @@ const defaultState = {
   currentMonth: '',
   history: {},
   calendar: {
-    dejem: [],
-    delegada: []
+    dejem: {},
+    delegada: {}
   },
   hoursFormType: 'folga',
   hoursRecords: [],
@@ -45,6 +45,28 @@ function buildMonthSnapshot(sourceState) {
   };
 }
 
+function normalizeCalendarState(calendarTypeState) {
+  if (Array.isArray(calendarTypeState)) {
+    return calendarTypeState.reduce((acc, day) => {
+      acc[day] = 1;
+      return acc;
+    }, {});
+  }
+
+  if (calendarTypeState && typeof calendarTypeState === 'object') {
+    return Object.entries(calendarTypeState).reduce((acc, [day, status]) => {
+      const numericDay = Number(day);
+      const numericStatus = Number(status);
+      if (!Number.isNaN(numericDay) && (numericStatus === 1 || numericStatus === 2)) {
+        acc[numericDay] = numericStatus;
+      }
+      return acc;
+    }, {});
+  }
+
+  return {};
+}
+
 function loadState() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
@@ -53,8 +75,8 @@ function loadState() {
       ...saved,
       history: saved?.history || {},
       calendar: {
-        dejem: saved?.calendar?.dejem || [],
-        delegada: saved?.calendar?.delegada || []
+        dejem: normalizeCalendarState(saved?.calendar?.dejem),
+        delegada: normalizeCalendarState(saved?.calendar?.delegada)
       },
       hoursRecords: (saved?.hoursRecords || []).map((record, index) => ({
         id: record.id || `legacy-${index}-${record.createdAt || Date.now()}`,
@@ -117,8 +139,8 @@ function ensureCurrentMonth() {
     state.dejemCount = 0;
     state.delegadaCount = 0;
     state.calendar = {
-      dejem: [],
-      delegada: []
+      dejem: {},
+      delegada: {}
     };
     state.currentTab = 'registro';
   }
@@ -170,7 +192,7 @@ function renderCalendar(type) {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDay = new Date(year, month, 1).getDay();
   const startColumn = (firstDay + 6) % 7;
-  const selectedDays = new Set(state.calendar[key] || []);
+  const selectedDays = state.calendar[key] || {};
   const weekLabels = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
 
   labelElement.textContent = getMonthLabel(state.currentMonth);
@@ -182,7 +204,8 @@ function renderCalendar(type) {
   }
 
   for (let day = 1; day <= daysInMonth; day += 1) {
-    const activeClass = selectedDays.has(day) ? ' selected' : '';
+    const dayStatus = Number(selectedDays[day] || 0);
+    const activeClass = dayStatus === 1 ? ' selected' : dayStatus === 2 ? ' scheduled' : '';
     html += `<button class="day${activeClass}" data-type="${key}" data-day="${day}">${day}</button>`;
   }
 
@@ -203,13 +226,18 @@ function renderCalendars() {
 }
 
 function toggleCalendarDay(type, day) {
-  const current = new Set(state.calendar[type] || []);
-  if (current.has(day)) {
-    current.delete(day);
+  const current = { ...(state.calendar[type] || {}) };
+  const currentStatus = Number(current[day] || 0);
+
+  if (currentStatus === 0) {
+    current[day] = 1;
+  } else if (currentStatus === 1) {
+    current[day] = 2;
   } else {
-    current.add(day);
+    delete current[day];
   }
-  state.calendar[type] = Array.from(current).sort((a, b) => a - b);
+
+  state.calendar[type] = current;
   render();
 }
 
@@ -466,8 +494,8 @@ document.getElementById('resetarTudo').addEventListener('click', () => {
     currentMonth: getMonthKey(),
     history: {},
     calendar: {
-      dejem: [],
-      delegada: []
+      dejem: {},
+      delegada: {}
     },
     hoursRecords: [],
     editingHoursRecordId: null
